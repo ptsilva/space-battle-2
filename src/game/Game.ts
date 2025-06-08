@@ -106,8 +106,13 @@ export class Game {
     // Shop
     this.uiManager.onPurchaseUpgrade((type: UpgradeType) => this.purchaseUpgrade(type));
 
-    // Keyboard shortcuts
+    // Keyboard shortcuts - only when not in input fields
     document.addEventListener('keydown', (e) => {
+      // Don't handle shortcuts when user is typing in input fields
+      if (this.inputManager.isInputFocused()) {
+        return;
+      }
+
       if (e.code === 'Escape') {
         if (this.gameState === GameState.PLAYING) {
           this.pauseGame();

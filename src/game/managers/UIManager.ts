@@ -135,13 +135,29 @@ export class UIManager {
       this.callbacks.pauseGame?.();
     });
 
-    // Enter key for name input
+    // Enhanced Enter key handling for name input
     this.elements.playerName?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
+        e.preventDefault(); // Prevent form submission
         const nameInput = this.elements.playerName as HTMLInputElement;
         const name = nameInput?.value?.trim() || 'Anonymous';
         this.callbacks.submitScore?.(name);
       }
+    });
+
+    // Ensure input field gets proper focus and keyboard events
+    this.elements.playerName?.addEventListener('focus', () => {
+      console.log('Name input focused - keyboard should work now');
+    });
+
+    this.elements.playerName?.addEventListener('blur', () => {
+      console.log('Name input blurred');
+    });
+
+    // Add click handler to ensure focus
+    this.elements.playerName?.addEventListener('click', () => {
+      const nameInput = this.elements.playerName as HTMLInputElement;
+      nameInput?.focus();
     });
   }
 
@@ -440,7 +456,13 @@ export class UIManager {
     if (playerName) {
       const nameInput = playerName as HTMLInputElement;
       nameInput.value = '';
-      nameInput.focus();
+      
+      // Enhanced focus handling for better keyboard input
+      setTimeout(() => {
+        nameInput.focus();
+        nameInput.select(); // Select any existing text
+        console.log('Name input focused and selected for keyboard input');
+      }, 100); // Small delay to ensure overlay is fully shown
     }
   }
 

@@ -4,20 +4,32 @@ export class InputManager {
   private touchPos: { x: number; y: number } | null = null;
   private isTouching = false;
   private canvas: HTMLCanvasElement;
+  private isInputFieldFocused = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.setupEventListeners();
+    this.setupInputFieldDetection();
   }
 
   private setupEventListeners(): void {
-    // Keyboard events
+    // Keyboard events - only capture when not in input fields
     document.addEventListener('keydown', (e) => {
+      // Don't capture keyboard input when user is typing in input fields
+      if (this.isInputFieldFocused) {
+        return;
+      }
+      
       this.keys.add(e.code);
       e.preventDefault();
     });
 
     document.addEventListener('keyup', (e) => {
+      // Don't capture keyboard input when user is typing in input fields
+      if (this.isInputFieldFocused) {
+        return;
+      }
+      
       this.keys.delete(e.code);
       e.preventDefault();
     });
@@ -52,6 +64,58 @@ export class InputManager {
     // Prevent context menu on right click
     this.canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
+    });
+  }
+
+  private setupInputFieldDetection(): void {
+    // Track when input fields are focused/blurred
+    document.addEventListener('focusin', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        console.log('Input field focused - disabling game input capture');
+        this.isInputFieldFocused = true;
+        // Clear any captured keys when input field is focused
+        this.keys.clear();
+      }
+    });
+
+    document.addEventListener('focusout', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        console.log('Input field blurred - enabling game input capture');
+        this.isInputFieldFocused = false;
+        // Clear keys to prevent stuck keys
+        this.keys.clear();
+      }
+    });
+
+    // Also check for specific input elements that might be added dynamically
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as HTMLElement;
+            const inputs = element.querySelectorAll('input, textarea');
+            inputs.forEach((input) => {
+              input.addEventListener('focus', () => {
+                console.log('Dynamic input focused - disabling game input capture');
+                this.isInputFieldFocused = true;
+                this.keys.clear();
+              });
+              input.addEventListener('blur', () => {
+                console.log('Dynamic input blurred - enabling game input capture');
+                this.isInputFieldFocused = false;
+                this.keys.clear();
+              });
+            });
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
     });
   }
 
@@ -95,5 +159,9 @@ export class InputManager {
 
   public isMobile(): boolean {
     return this.isTouching;
+  }
+
+  public isInputFocused(): boolean {
+    return this.isInputFieldFocused;
   }
 }
