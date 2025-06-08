@@ -83,6 +83,7 @@ export class UIManager {
       btn.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
         const upgradeType = target.getAttribute('data-upgrade') as UpgradeType;
+        console.log(`UI: Purchase button clicked for ${upgradeType}`);
         this.callbacks.purchaseUpgrade?.(upgradeType);
       });
     });
@@ -237,6 +238,7 @@ export class UIManager {
   }
 
   public updateCoins(coins: number): void {
+    console.log(`UI: Updating coins display to ${coins}`);
     const coinsText = this.elements.coinsText;
     if (coinsText) {
       coinsText.textContent = coins.toLocaleString();
@@ -247,9 +249,14 @@ export class UIManager {
     if (coinsTextShop) {
       coinsTextShop.textContent = coins.toLocaleString();
     }
+    
+    // Force update button states after coin update
+    this.updateButtonStatesFromCurrentCoins();
   }
 
   public updateUpgradeDisplay(upgrades: PlayerUpgrades): void {
+    console.log('UI: Updating upgrade display', upgrades);
+    
     // Update levels with null checks
     const weaponLevel = this.elements.weaponLevel;
     if (weaponLevel) {
@@ -289,6 +296,8 @@ export class UIManager {
   private updateUpgradeButtonStates(upgrades: PlayerUpgrades): void {
     const coinsText = this.elements.coinsText?.textContent || '0';
     const currentCoins = parseInt(coinsText.replace(/,/g, ''));
+    console.log(`UI: Updating button states with ${currentCoins} coins`);
+    
     const baseCosts = { weapon: 100, shield: 150, hp: 200, speed: 120 };
 
     document.querySelectorAll('.shop-buy-btn').forEach(btn => {
@@ -297,15 +306,40 @@ export class UIManager {
         const cost = Math.floor(baseCosts[upgradeType] * Math.pow(1.5, upgrades[upgradeType] - 1));
         const button = btn as HTMLButtonElement;
         
+        console.log(`UI: ${upgradeType} upgrade - Cost: ${cost}, Can afford: ${currentCoins >= cost}`);
+        
         if (currentCoins >= cost) {
           button.disabled = false;
           button.style.opacity = '1';
+          button.style.cursor = 'pointer';
         } else {
           button.disabled = true;
           button.style.opacity = '0.5';
+          button.style.cursor = 'not-allowed';
         }
       }
     });
+  }
+
+  private updateButtonStatesFromCurrentCoins(): void {
+    // Get current coins from display
+    const coinsText = this.elements.coinsText?.textContent || '0';
+    const currentCoins = parseInt(coinsText.replace(/,/g, ''));
+    
+    // Get current upgrade levels from display
+    const weaponLevel = parseInt(this.elements.weaponLevel?.textContent || '1');
+    const shieldLevel = parseInt(this.elements.shieldLevel?.textContent || '1');
+    const hpLevel = parseInt(this.elements.hpLevel?.textContent || '1');
+    const speedLevel = parseInt(this.elements.speedLevel?.textContent || '1');
+    
+    const upgrades: PlayerUpgrades = {
+      weapon: weaponLevel,
+      shield: shieldLevel,
+      hp: hpLevel,
+      speed: speedLevel
+    };
+    
+    this.updateUpgradeButtonStates(upgrades);
   }
 
   // Screen management
@@ -332,6 +366,9 @@ export class UIManager {
         menuContent.scrollTop = 0;
       }
     }
+    
+    // Force update button states when shop is shown
+    this.updateButtonStatesFromCurrentCoins();
   }
 
   public async showLeaderboard(scoresPromise?: Promise<LeaderboardEntry[]>): Promise<void> {

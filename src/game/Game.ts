@@ -711,15 +711,24 @@ export class Game {
   }
 
   private purchaseUpgrade(type: UpgradeType): boolean {
+    console.log(`Attempting to purchase upgrade: ${type}`);
+    console.log(`Current coins: ${this.stats.coins}`);
+    
     const cost = this.player.getUpgradeCost(type);
+    console.log(`Upgrade cost: ${cost}`);
+    
     if (this.stats.coins >= cost) {
+      console.log('Purchase approved - deducting coins and applying upgrade');
       this.stats.coins -= cost;
       this.player.upgrade(type);
       this.saveGameData();
       this.uiManager.updateCoins(this.stats.coins);
       this.uiManager.updateUpgradeDisplay(this.player.getUpgrades());
+      console.log(`Purchase successful. Remaining coins: ${this.stats.coins}`);
       return true;
+    } else {
+      console.log('Purchase denied - insufficient coins');
+      return false;
     }
-    return false;
   }
 }
