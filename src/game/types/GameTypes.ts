@@ -26,8 +26,17 @@ export interface PlayerUpgrades {
 }
 
 export interface LeaderboardEntry {
+  id?: string;
   name: string;
   score: number;
   wave: number;
   date: string;
+}
+
+export interface DatabaseLeaderboardEntry {
+  id: string;
+  player_name: string;
+  score: number;
+  wave: number;
+  created_at: string;
 }

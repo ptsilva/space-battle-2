@@ -581,7 +581,7 @@ export class Game {
     this.ctx.restore();
   }
 
-  // Game state methods (keeping existing methods unchanged)
+  // Game state methods
   private startNewGame(): void {
     this.gameState = GameState.PLAYING;
     this.previousGameState = GameState.MENU;
@@ -649,13 +649,15 @@ export class Game {
     }
   }
 
-  private showLeaderboard(): void {
+  private async showLeaderboard(): Promise<void> {
     if (this.gameState === GameState.PLAYING) {
       this.previousGameState = this.gameState;
       this.gameState = GameState.LEADERBOARD;
     }
-    const scores = this.storageManager.getLeaderboard();
-    this.uiManager.showLeaderboard(scores);
+    
+    // Get scores asynchronously and pass the promise to UI
+    const scoresPromise = this.storageManager.getLeaderboard();
+    await this.uiManager.showLeaderboard(scoresPromise);
   }
 
   private resumeFromLeaderboard(): void {
@@ -697,9 +699,15 @@ export class Game {
     this.uiManager.showMainMenu();
   }
 
-  private submitScore(playerName: string): void {
-    this.storageManager.addScore(playerName, this.stats.score, this.stats.wave - 1);
-    this.showLeaderboard();
+  private async submitScore(playerName: string): Promise<void> {
+    try {
+      await this.storageManager.addScore(playerName, this.stats.score, this.stats.wave - 1);
+      await this.showLeaderboard();
+    } catch (error) {
+      console.error('Failed to submit score:', error);
+      // Still show leaderboard even if submission failed
+      await this.showLeaderboard();
+    }
   }
 
   private purchaseUpgrade(type: UpgradeType): boolean {

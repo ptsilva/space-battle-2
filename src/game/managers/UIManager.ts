@@ -297,13 +297,24 @@ export class UIManager {
     }
   }
 
-  public showLeaderboard(scores: LeaderboardEntry[]): void {
+  public async showLeaderboard(scoresPromise?: Promise<LeaderboardEntry[]>): Promise<void> {
     this.hideAllOverlays();
     const leaderboardOverlay = this.elements.leaderboardOverlay;
     if (leaderboardOverlay) {
       leaderboardOverlay.classList.remove('hidden');
     }
-    this.populateLeaderboard(scores);
+
+    // Show loading state
+    this.showLeaderboardLoading();
+
+    try {
+      // Wait for scores if a promise was provided
+      const scores = scoresPromise ? await scoresPromise : [];
+      this.populateLeaderboard(scores);
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      this.showLeaderboardError();
+    }
   }
 
   public showControls(): void {
@@ -358,9 +369,30 @@ export class UIManager {
     });
   }
 
+  private showLeaderboardLoading(): void {
+    const leaderboardList = this.elements.leaderboardList;
+    if (!leaderboardList) return;
+    
+    leaderboardList.innerHTML = '<p style="text-align: center; color: #666;">Loading leaderboard...</p>';
+  }
+
+  private showLeaderboardError(): void {
+    const leaderboardList = this.elements.leaderboardList;
+    if (!leaderboardList) return;
+    
+    leaderboardList.innerHTML = '<p style="text-align: center; color: #ff6666;">Failed to load leaderboard. Please try again.</p>';
+  }
+
   private populateLeaderboard(scores: LeaderboardEntry[]): void {
     const leaderboardList = this.elements.leaderboardList;
     if (!leaderboardList) return;
+    
+    // Ensure scores is an array
+    if (!Array.isArray(scores)) {
+      console.error('populateLeaderboard received non-array data:', scores);
+      this.showLeaderboardError();
+      return;
+    }
     
     leaderboardList.innerHTML = '';
     
