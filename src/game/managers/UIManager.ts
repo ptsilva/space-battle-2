@@ -29,6 +29,7 @@ export class UIManager {
     this.elements.coinsText = document.getElementById('coins-text');
     
     // Shop elements
+    this.elements.coinsTextShop = document.getElementById('coins-text-shop');
     this.elements.weaponCost = document.getElementById('weapon-cost');
     this.elements.weaponLevel = document.getElementById('weapon-level');
     this.elements.shieldCost = document.getElementById('shield-cost');
@@ -240,6 +241,12 @@ export class UIManager {
     if (coinsText) {
       coinsText.textContent = coins.toLocaleString();
     }
+    
+    // Also update shop coins display
+    const coinsTextShop = this.elements.coinsTextShop;
+    if (coinsTextShop) {
+      coinsTextShop.textContent = coins.toLocaleString();
+    }
   }
 
   public updateUpgradeDisplay(upgrades: PlayerUpgrades): void {
@@ -274,6 +281,31 @@ export class UIManager {
         costElement.textContent = cost.toString();
       }
     });
+
+    // Update button states based on available coins
+    this.updateUpgradeButtonStates(upgrades);
+  }
+
+  private updateUpgradeButtonStates(upgrades: PlayerUpgrades): void {
+    const coinsText = this.elements.coinsText?.textContent || '0';
+    const currentCoins = parseInt(coinsText.replace(/,/g, ''));
+    const baseCosts = { weapon: 100, shield: 150, hp: 200, speed: 120 };
+
+    document.querySelectorAll('.shop-buy-btn').forEach(btn => {
+      const upgradeType = btn.getAttribute('data-upgrade') as UpgradeType;
+      if (upgradeType) {
+        const cost = Math.floor(baseCosts[upgradeType] * Math.pow(1.5, upgrades[upgradeType] - 1));
+        const button = btn as HTMLButtonElement;
+        
+        if (currentCoins >= cost) {
+          button.disabled = false;
+          button.style.opacity = '1';
+        } else {
+          button.disabled = true;
+          button.style.opacity = '0.5';
+        }
+      }
+    });
   }
 
   // Screen management
@@ -294,6 +326,11 @@ export class UIManager {
     const shopOverlay = this.elements.shopOverlay;
     if (shopOverlay) {
       shopOverlay.classList.remove('hidden');
+      // Scroll to top when opening shop
+      const menuContent = shopOverlay.querySelector('.menu-content');
+      if (menuContent) {
+        menuContent.scrollTop = 0;
+      }
     }
   }
 
@@ -302,6 +339,11 @@ export class UIManager {
     const leaderboardOverlay = this.elements.leaderboardOverlay;
     if (leaderboardOverlay) {
       leaderboardOverlay.classList.remove('hidden');
+      // Scroll to top when opening leaderboard
+      const menuContent = leaderboardOverlay.querySelector('.menu-content');
+      if (menuContent) {
+        menuContent.scrollTop = 0;
+      }
     }
 
     // Show loading state
@@ -322,6 +364,11 @@ export class UIManager {
     const controlsOverlay = this.elements.controlsOverlay;
     if (controlsOverlay) {
       controlsOverlay.classList.remove('hidden');
+      // Scroll to top when opening controls
+      const menuContent = controlsOverlay.querySelector('.menu-content');
+      if (menuContent) {
+        menuContent.scrollTop = 0;
+      }
     }
   }
 
@@ -330,6 +377,11 @@ export class UIManager {
     const gameOverOverlay = this.elements.gameOverOverlay;
     if (gameOverOverlay) {
       gameOverOverlay.classList.remove('hidden');
+      // Scroll to top when opening game over
+      const menuContent = gameOverOverlay.querySelector('.menu-content');
+      if (menuContent) {
+        menuContent.scrollTop = 0;
+      }
     }
     
     const finalScore = this.elements.finalScore;
