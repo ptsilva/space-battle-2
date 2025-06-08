@@ -481,6 +481,8 @@ body {
   
   .mobile-controls {
     display: flex;
+    bottom: 80px;
+    right: 15px;
   }
   
   .controls-info {
@@ -504,15 +506,156 @@ body {
     min-width: 150px;
   }
   
+  .hud {
+    top: 5px;
+    left: 5px;
+    right: 5px;
+  }
+  
   .hud-left, .hud-right {
     flex-direction: column;
+    gap: 5px;
   }
   
   .stat-bar {
     font-size: 10px;
+    padding: 4px 8px;
   }
   
   .bar {
     width: 60px;
+  }
+  
+  .wave-info {
+    padding: 8px 15px;
+  }
+  
+  .wave-info span {
+    font-size: 14px;
+  }
+  
+  .score-info, .currency-info {
+    padding: 6px 10px;
+  }
+  
+  .score-info span:last-child, .currency-info span:last-child {
+    font-size: 14px;
+  }
+  
+  /* Mobile controls optimization for small screens */
+  .mobile-controls {
+    bottom: 70px;
+    right: 10px;
+    gap: 8px;
+  }
+  
+  .mobile-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 18px;
+  }
+}
+
+/* Extra small screens (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  .hud {
+    top: 5px;
+    left: 5px;
+    right: 5px;
+  }
+  
+  .stat-bar {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  .bar {
+    width: 50px;
+  }
+  
+  .wave-info {
+    padding: 6px 12px;
+  }
+  
+  .wave-info span {
+    font-size: 12px;
+  }
+  
+  .mobile-controls {
+    bottom: 60px;
+    right: 8px;
+    gap: 6px;
+  }
+  
+  .mobile-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+    border-width: 1px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hud {
+    top: 5px;
+    left: 5px;
+    right: 5px;
+  }
+  
+  .hud-left, .hud-right {
+    flex-direction: row;
+    gap: 5px;
+  }
+  
+  .stat-bar {
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+  
+  .bar {
+    width: 40px;
+  }
+  
+  .wave-info {
+    padding: 5px 10px;
+  }
+  
+  .wave-info span {
+    font-size: 11px;
+  }
+  
+  .mobile-controls {
+    bottom: 10px;
+    right: 5px;
+    gap: 5px;
+  }
+  
+  .mobile-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+}
+
+/* Safe area adjustments for devices with notches */
+@media (max-width: 768px) {
+  .mobile-controls {
+    bottom: max(80px, env(safe-area-inset-bottom, 80px));
+    right: max(15px, env(safe-area-inset-right, 15px));
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-controls {
+    bottom: max(70px, env(safe-area-inset-bottom, 70px));
+    right: max(10px, env(safe-area-inset-right, 10px));
+  }
+}
+
+@media (max-width: 375px) {
+  .mobile-controls {
+    bottom: max(60px, env(safe-area-inset-bottom, 60px));
+    right: max(8px, env(safe-area-inset-right, 8px));
   }
 }

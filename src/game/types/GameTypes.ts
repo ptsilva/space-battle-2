@@ -2,7 +2,10 @@ export enum GameState {
   MENU = 'menu',
   PLAYING = 'playing',
   PAUSED = 'paused',
-  GAME_OVER = 'gameOver'
+  GAME_OVER = 'gameOver',
+  SHOP = 'shop',
+  LEADERBOARD = 'leaderboard',
+  CONTROLS = 'controls'
 }
 
 export interface GameStats {

@@ -13,6 +13,7 @@ export class Game {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private gameState: GameState = GameState.MENU;
+  private previousGameState: GameState = GameState.MENU;
   private lastTime = 0;
 
   // Game entities
@@ -86,9 +87,13 @@ export class Game {
   private setupEventListeners(): void {
     // Menu navigation
     this.uiManager.onStartGame(() => this.startNewGame());
+    this.uiManager.onPauseAndShowShop(() => this.pauseAndShowShop());
     this.uiManager.onShowShop(() => this.showShop());
+    this.uiManager.onResumeFromShop(() => this.resumeFromShop());
     this.uiManager.onShowLeaderboard(() => this.showLeaderboard());
+    this.uiManager.onResumeFromLeaderboard(() => this.resumeFromLeaderboard());
     this.uiManager.onShowControls(() => this.showControls());
+    this.uiManager.onResumeFromControls(() => this.resumeFromControls());
     this.uiManager.onPauseGame(() => this.pauseGame());
     this.uiManager.onResumeGame(() => this.resumeGame());
     this.uiManager.onRestartGame(() => this.startNewGame());
@@ -105,6 +110,12 @@ export class Game {
           this.pauseGame();
         } else if (this.gameState === GameState.PAUSED) {
           this.resumeGame();
+        } else if (this.gameState === GameState.SHOP && this.previousGameState === GameState.PLAYING) {
+          this.resumeFromShop();
+        } else if (this.gameState === GameState.LEADERBOARD && this.previousGameState === GameState.PLAYING) {
+          this.resumeFromLeaderboard();
+        } else if (this.gameState === GameState.CONTROLS && this.previousGameState === GameState.PLAYING) {
+          this.resumeFromControls();
         }
       } else if (e.code === 'KeyP' && this.gameState === GameState.PLAYING) {
         this.pauseGame();
@@ -464,6 +475,7 @@ export class Game {
   // Game state methods
   private startNewGame(): void {
     this.gameState = GameState.PLAYING;
+    this.previousGameState = GameState.MENU;
     this.stats = {
       score: 0,
       wave: 1,
@@ -494,6 +506,7 @@ export class Game {
 
   private pauseGame(): void {
     if (this.gameState === GameState.PLAYING) {
+      this.previousGameState = this.gameState;
       this.gameState = GameState.PAUSED;
       this.uiManager.showPause();
     }
@@ -506,28 +519,75 @@ export class Game {
     }
   }
 
-  private gameOver(): void {
-    this.gameState = GameState.GAME_OVER;
-    this.saveGameData();
-    this.uiManager.showGameOver(this.stats.score, this.stats.wave - 1, this.stats.coins);
-  }
-
-  private showMainMenu(): void {
-    this.gameState = GameState.MENU;
-    this.uiManager.showMainMenu();
+  private pauseAndShowShop(): void {
+    if (this.gameState === GameState.PLAYING) {
+      this.previousGameState = this.gameState;
+      this.gameState = GameState.SHOP;
+      this.uiManager.showShop();
+    } else if (this.gameState === GameState.MENU) {
+      this.showShop();
+    }
   }
 
   private showShop(): void {
     this.uiManager.showShop();
   }
 
+  private resumeFromShop(): void {
+    if (this.previousGameState === GameState.PLAYING) {
+      this.gameState = GameState.PLAYING;
+      this.uiManager.showGame();
+    } else {
+      this.showMainMenu();
+    }
+  }
+
   private showLeaderboard(): void {
+    if (this.gameState === GameState.PLAYING) {
+      this.previousGameState = this.gameState;
+      this.gameState = GameState.LEADERBOARD;
+    }
     const scores = this.storageManager.getLeaderboard();
     this.uiManager.showLeaderboard(scores);
   }
 
+  private resumeFromLeaderboard(): void {
+    if (this.previousGameState === GameState.PLAYING) {
+      this.gameState = GameState.PLAYING;
+      this.uiManager.showGame();
+    } else {
+      this.showMainMenu();
+    }
+  }
+
   private showControls(): void {
+    if (this.gameState === GameState.PLAYING) {
+      this.previousGameState = this.gameState;
+      this.gameState = GameState.CONTROLS;
+    }
     this.uiManager.showControls();
+  }
+
+  private resumeFromControls(): void {
+    if (this.previousGameState === GameState.PLAYING) {
+      this.gameState = GameState.PLAYING;
+      this.uiManager.showGame();
+    } else {
+      this.showMainMenu();
+    }
+  }
+
+  private gameOver(): void {
+    this.gameState = GameState.GAME_OVER;
+    this.previousGameState = GameState.GAME_OVER;
+    this.saveGameData();
+    this.uiManager.showGameOver(this.stats.score, this.stats.wave - 1, this.stats.coins);
+  }
+
+  private showMainMenu(): void {
+    this.gameState = GameState.MENU;
+    this.previousGameState = GameState.MENU;
+    this.uiManager.showMainMenu();
   }
 
   private submitScore(playerName: string): void {

@@ -55,7 +55,7 @@ export class UIManager {
     });
     
     document.getElementById('shop-btn')?.addEventListener('click', () => {
-      this.callbacks.showShop?.();
+      this.callbacks.pauseAndShowShop?.();
     });
     
     document.getElementById('leaderboard-btn')?.addEventListener('click', () => {
@@ -68,7 +68,7 @@ export class UIManager {
 
     // Shop buttons
     document.getElementById('shop-close-btn')?.addEventListener('click', () => {
-      this.showMainMenu();
+      this.callbacks.resumeFromShop?.();
     });
 
     document.querySelectorAll('.shop-buy-btn').forEach(btn => {
@@ -81,12 +81,12 @@ export class UIManager {
 
     // Leaderboard buttons
     document.getElementById('leaderboard-close-btn')?.addEventListener('click', () => {
-      this.showMainMenu();
+      this.callbacks.resumeFromLeaderboard?.();
     });
 
     // Controls buttons
     document.getElementById('controls-close-btn')?.addEventListener('click', () => {
-      this.showMainMenu();
+      this.callbacks.resumeFromControls?.();
     });
 
     // Game over buttons
@@ -119,7 +119,7 @@ export class UIManager {
 
     // Mobile controls
     document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
-      this.callbacks.showShop?.();
+      this.callbacks.pauseAndShowShop?.();
     });
 
     document.getElementById('mobile-pause-btn')?.addEventListener('click', () => {
@@ -143,6 +143,22 @@ export class UIManager {
 
   public onShowShop(callback: Function): void {
     this.callbacks.showShop = callback;
+  }
+
+  public onPauseAndShowShop(callback: Function): void {
+    this.callbacks.pauseAndShowShop = callback;
+  }
+
+  public onResumeFromShop(callback: Function): void {
+    this.callbacks.resumeFromShop = callback;
+  }
+
+  public onResumeFromLeaderboard(callback: Function): void {
+    this.callbacks.resumeFromLeaderboard = callback;
+  }
+
+  public onResumeFromControls(callback: Function): void {
+    this.callbacks.resumeFromControls = callback;
   }
 
   public onShowLeaderboard(callback: Function): void {
