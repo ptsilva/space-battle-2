@@ -338,10 +338,7 @@ export class UIManager {
   }
 
   private updateButtonStatesFromCurrentCoins(): void {
-    // Get current coins from display
-    const coinsText = this.elements.coinsText?.textContent || '0';
-    const currentCoins = parseInt(coinsText.replace(/,/g, ''));
-    
+  
     // Get current upgrade levels from display
     const weaponLevel = parseInt(this.elements.weaponLevel?.textContent || '1');
     const shieldLevel = parseInt(this.elements.shieldLevel?.textContent || '1');
