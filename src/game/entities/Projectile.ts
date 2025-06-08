@@ -3,8 +3,8 @@ import { Vector2 } from '../utils/Vector2';
 export class Projectile {
   public position: Vector2;
   public velocity: Vector2;
-  public width = 4;
-  public height = 12;
+  public width: number = 4;
+  public height: number = 12;
   public damage: number;
   public isPlayerProjectile: boolean;
   public color: string;
@@ -16,13 +16,17 @@ export class Projectile {
     vy: number,
     damage: number,
     isPlayerProjectile: boolean,
-    color: string
+    color: string,
+    width: number = 4,
+    height: number = 12
   ) {
     this.position = new Vector2(x, y);
     this.velocity = new Vector2(vx, vy);
     this.damage = damage;
     this.isPlayerProjectile = isPlayerProjectile;
     this.color = color;
+    this.width = width;
+    this.height = height;
   }
 
   public update(deltaTime: number): void {
@@ -51,8 +55,22 @@ export class Projectile {
       );
       ctx.fill();
     } else {
-      // Enemy projectiles are simple rectangles
-      ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+      // Enemy projectiles vary by size
+      if (this.width > 6) {
+        // Large projectiles (boss/bomber)
+        ctx.beginPath();
+        ctx.ellipse(
+          this.position.x + this.width / 2,
+          this.position.y + this.height / 2,
+          this.width / 2,
+          this.height / 2,
+          0, 0, Math.PI * 2
+        );
+        ctx.fill();
+      } else {
+        // Regular enemy projectiles
+        ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+      }
     }
     
     ctx.restore();

@@ -1,5 +1,6 @@
 import { Player } from './entities/Player';
 import { Enemy } from './entities/Enemy';
+import { Boss } from './entities/Boss';
 import { Projectile } from './entities/Projectile';
 import { PowerUp } from './entities/PowerUp';
 import { ParticleSystem } from './effects/ParticleSystem';
@@ -19,6 +20,7 @@ export class Game {
   // Game entities
   private player: Player;
   private enemies: Enemy[] = [];
+  private boss: Boss | null = null;
   private projectiles: Projectile[] = [];
   private powerUps: PowerUp[] = [];
   private particles: ParticleSystem;
@@ -44,6 +46,7 @@ export class Game {
   private enemiesInWave = 5;
   private enemiesSpawned = 0;
   private waveComplete = false;
+  private isBossWave = false;
 
   // Power-up spawn
   private powerUpTimer = 0;
@@ -178,6 +181,9 @@ export class Game {
     // Update enemies
     this.updateEnemies(deltaTime);
 
+    // Update boss
+    this.updateBoss(deltaTime);
+
     // Update power-ups
     this.updatePowerUps(deltaTime);
 
@@ -223,15 +229,55 @@ export class Game {
       enemy.update(deltaTime, this.player.position, this.canvas);
 
       // Enemy shooting
-      const enemyProjectile = enemy.shoot();
-      if (enemyProjectile) {
-        this.projectiles.push(enemyProjectile);
+      const enemyProjectiles = enemy.shoot();
+      if (enemyProjectiles.length > 0) {
+        this.projectiles.push(...enemyProjectiles);
       }
 
       // Remove enemies that are off-screen (only if moving away)
       if (enemy.position.y > this.canvas.height + 100) {
         this.enemies.splice(i, 1);
       }
+    }
+  }
+
+  private updateBoss(deltaTime: number): void {
+    if (!this.boss) return;
+
+    this.boss.update(deltaTime, this.player.position, this.canvas);
+
+    // Boss shooting
+    const bossProjectiles = this.boss.shoot();
+    if (bossProjectiles.length > 0) {
+      this.projectiles.push(...bossProjectiles);
+    }
+
+    // Check if boss is defeated
+    if (this.boss.isDefeated) {
+      this.stats.enemiesKilled++;
+      this.stats.score += this.boss.scoreValue;
+      this.stats.coins += this.boss.coinValue;
+
+      // Create massive explosion
+      this.particles.createExplosion(
+        this.boss.position.x + this.boss.width / 2,
+        this.boss.position.y + this.boss.height / 2,
+        '#ffaa00', 30
+      );
+      this.soundManager.playExplosion();
+
+      // Spawn multiple power-ups
+      for (let i = 0; i < 3; i++) {
+        this.spawnPowerUp(
+          this.boss.position.x + Math.random() * this.boss.width,
+          this.boss.position.y + Math.random() * this.boss.height
+        );
+      }
+
+      this.boss = null;
+      this.isBossWave = false;
+      this.waveComplete = true;
+      this.waveTimer = 0;
     }
   }
 
@@ -253,34 +299,40 @@ export class Game {
       const projectile = this.projectiles[i];
       if (!projectile.isPlayerProjectile) continue;
 
+      // Check enemy collisions
       for (let j = this.enemies.length - 1; j >= 0; j--) {
         const enemy = this.enemies[j];
         if (this.checkCollision(projectile, enemy)) {
-          // Damage enemy
           enemy.takeDamage(projectile.damage);
           this.projectiles.splice(i, 1);
 
-          // Create hit particles
           this.particles.createExplosion(enemy.position.x, enemy.position.y, '#ff4444', 5);
 
-          // Check if enemy is destroyed
           if (enemy.hp <= 0) {
             this.enemies.splice(j, 1);
             this.stats.enemiesKilled++;
             this.stats.score += enemy.scoreValue;
             this.stats.coins += enemy.coinValue;
 
-            // Create destruction particles
             this.particles.createExplosion(enemy.position.x, enemy.position.y, '#ffaa00', 15);
             this.soundManager.playExplosion();
 
-            // Chance to spawn power-up
-            if (Math.random() < 0.15) { // 15% chance
+            if (Math.random() < 0.15) {
               this.spawnPowerUp(enemy.position.x, enemy.position.y);
             }
           }
           break;
         }
+      }
+
+      // Check boss collision
+      if (this.boss && this.checkCollision(projectile, this.boss)) {
+        this.boss.takeDamage(projectile.damage);
+        this.projectiles.splice(i, 1);
+
+        this.particles.createExplosion(
+          projectile.position.x, projectile.position.y, '#ff4444', 8
+        );
       }
     }
 
@@ -293,7 +345,6 @@ export class Game {
         this.player.takeDamage(projectile.damage);
         this.projectiles.splice(i, 1);
 
-        // Create hit particles
         this.particles.createExplosion(this.player.position.x, this.player.position.y, '#4444ff', 8);
       }
     }
@@ -305,7 +356,6 @@ export class Game {
         this.player.takeDamage(enemy.damage);
         enemy.takeDamage(this.player.ramDamage);
 
-        // Create collision particles
         this.particles.createExplosion(
           (enemy.position.x + this.player.position.x) / 2,
           (enemy.position.y + this.player.position.y) / 2,
@@ -322,6 +372,15 @@ export class Game {
       }
     }
 
+    // Boss vs player
+    if (this.boss && this.checkCollision(this.boss, this.player)) {
+      this.player.takeDamage(this.boss.damage);
+      
+      this.particles.createExplosion(
+        this.player.position.x, this.player.position.y, '#ffffff', 15
+      );
+    }
+
     // Player vs power-ups
     for (let i = this.powerUps.length - 1; i >= 0; i--) {
       const powerUp = this.powerUps[i];
@@ -329,7 +388,6 @@ export class Game {
         this.player.applyPowerUp(powerUp);
         this.powerUps.splice(i, 1);
 
-        // Create collection particles
         this.particles.createExplosion(powerUp.position.x, powerUp.position.y, powerUp.color, 8);
         this.soundManager.playPowerUp();
       }
@@ -344,7 +402,12 @@ export class Game {
   }
 
   private updateWaveLogic(deltaTime: number): void {
-    if (this.enemies.length === 0 && this.enemiesSpawned >= this.enemiesInWave) {
+    // Check if wave is complete
+    const waveEntitiesCleared = this.enemies.length === 0 && 
+                               (!this.isBossWave || !this.boss) && 
+                               this.enemiesSpawned >= this.enemiesInWave;
+
+    if (waveEntitiesCleared) {
       if (!this.waveComplete) {
         this.waveComplete = true;
         this.waveTimer = 0;
@@ -358,9 +421,9 @@ export class Game {
       if (this.waveTimer >= this.waveDelay) {
         this.startNextWave();
       }
-    } else if (this.enemiesSpawned < this.enemiesInWave) {
-      // Spawn enemies gradually
-      if (this.enemies.length < 3) { // Max 3 enemies on screen at once
+    } else if (!this.isBossWave && this.enemiesSpawned < this.enemiesInWave) {
+      // Spawn regular enemies gradually
+      if (this.enemies.length < 3) {
         this.spawnEnemy();
         this.enemiesSpawned++;
       }
@@ -369,10 +432,20 @@ export class Game {
 
   private startNextWave(): void {
     this.stats.wave++;
-    this.enemiesInWave = Math.min(5 + Math.floor(this.stats.wave / 2), 15);
-    this.enemiesSpawned = 0;
     this.waveComplete = false;
     this.waveTimer = 0;
+
+    // Check if this should be a boss wave
+    this.isBossWave = this.stats.wave % 5 === 0;
+
+    if (this.isBossWave) {
+      this.spawnBoss();
+      this.enemiesInWave = 0;
+      this.enemiesSpawned = 0;
+    } else {
+      this.enemiesInWave = Math.min(5 + Math.floor(this.stats.wave / 2), 15);
+      this.enemiesSpawned = 0;
+    }
 
     // Increase difficulty every 5 waves
     if (this.stats.wave % 5 === 0) {
@@ -385,6 +458,12 @@ export class Game {
     const y = -60;
     const enemy = new Enemy(x, y, this.stats.wave);
     this.enemies.push(enemy);
+  }
+
+  private spawnBoss(): void {
+    const x = this.canvas.width / 2 - 100; // Center the boss
+    const y = -120;
+    this.boss = new Boss(x, y, this.stats.wave);
   }
 
   private updatePowerUpSpawning(deltaTime: number): void {
@@ -426,6 +505,9 @@ export class Game {
       this.player.render(this.ctx);
       
       this.enemies.forEach(enemy => enemy.render(this.ctx));
+      if (this.boss) {
+        this.boss.render(this.ctx);
+      }
       this.projectiles.forEach(projectile => projectile.render(this.ctx));
       this.powerUps.forEach(powerUp => powerUp.render(this.ctx));
       
@@ -435,6 +517,11 @@ export class Game {
       // Draw wave transition text
       if (this.waveComplete && this.waveTimer < 2000) {
         this.drawWaveTransition();
+      }
+
+      // Draw boss warning
+      if (this.isBossWave && this.boss && this.waveTimer < 3000) {
+        this.drawBossWarning();
       }
     }
   }
@@ -461,7 +548,7 @@ export class Game {
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     
-    const text = `WAVE ${this.stats.wave} COMPLETE!`;
+    const text = this.isBossWave ? `BOSS WAVE ${this.stats.wave}!` : `WAVE ${this.stats.wave} COMPLETE!`;
     this.ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2 - 30);
     
     this.ctx.font = 'bold 24px Orbitron';
@@ -472,35 +559,55 @@ export class Game {
     this.ctx.restore();
   }
 
-  // Game state methods
+  private drawBossWarning(): void {
+    this.ctx.save();
+    this.ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    this.ctx.fillStyle = '#ff0000';
+    this.ctx.font = 'bold 64px Orbitron';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    const alpha = Math.sin(this.stats.gameTime * 0.01) * 0.5 + 0.5;
+    this.ctx.globalAlpha = alpha;
+    
+    this.ctx.fillText('WARNING', this.canvas.width / 2, this.canvas.height / 2 - 50);
+    
+    this.ctx.font = 'bold 32px Orbitron';
+    this.ctx.fillStyle = '#ffff00';
+    this.ctx.fillText('BOSS APPROACHING', this.canvas.width / 2, this.canvas.height / 2 + 20);
+    
+    this.ctx.restore();
+  }
+
+  // Game state methods (keeping existing methods unchanged)
   private startNewGame(): void {
     this.gameState = GameState.PLAYING;
     this.previousGameState = GameState.MENU;
     this.stats = {
       score: 0,
       wave: 1,
-      coins: this.stats.coins, // Keep coins
+      coins: this.stats.coins,
       enemiesKilled: 0,
       gameTime: 0
     };
 
-    // Reset game objects
     this.player.reset(this.canvas.width / 2, this.canvas.height - 100);
     this.enemies = [];
+    this.boss = null;
     this.projectiles = [];
     this.powerUps = [];
     this.particles = new ParticleSystem();
 
-    // Reset wave logic
     this.enemiesInWave = 5;
     this.enemiesSpawned = 0;
     this.waveComplete = false;
+    this.isBossWave = false;
     this.waveTimer = 0;
     this.powerUpTimer = 0;
 
-    // Reset difficulty
     Enemy.resetDifficulty();
-
     this.uiManager.showGame();
   }
 
