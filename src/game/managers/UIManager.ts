@@ -409,6 +409,7 @@ export class UIManager {
         <span class="leaderboard-rank">#${index + 1}</span>
         <span class="leaderboard-name">${entry.name}</span>
         <span class="leaderboard-score">${entry.score.toLocaleString()}</span>
+        <span class="leaderboard-wave">Wave ${entry.wave}</span>
       `;
       
       leaderboardList.appendChild(entryElement);

@@ -2,7 +2,7 @@ export enum GameState {
   MENU = 'menu',
   PLAYING = 'playing',
   PAUSED = 'paused',
-  GAME_OVER = 'gameOver',
+  GAME_OVER = 'game_over',
   SHOP = 'shop',
   LEADERBOARD = 'leaderboard',
   CONTROLS = 'controls'
@@ -16,8 +16,6 @@ export interface GameStats {
   gameTime: number;
 }
 
-export type UpgradeType = 'weapon' | 'shield' | 'hp' | 'speed';
-
 export interface PlayerUpgrades {
   weapon: number;
   shield: number;
@@ -25,18 +23,25 @@ export interface PlayerUpgrades {
   speed: number;
 }
 
+export enum UpgradeType {
+  WEAPON = 'weapon',
+  SHIELD = 'shield',
+  HP = 'hp',
+  SPEED = 'speed'
+}
+
 export interface LeaderboardEntry {
-  id?: string;
   name: string;
   score: number;
   wave: number;
-  date: string;
+  date?: string;
 }
 
-export interface DatabaseLeaderboardEntry {
-  id: string;
-  player_name: string;
-  score: number;
-  wave: number;
-  created_at: string;
+export enum PowerUpType {
+  HEALTH = 'health',
+  SHIELD = 'shield',
+  WEAPON = 'weapon',
+  SPEED = 'speed',
+  MULTI_SHOT = 'multi_shot',
+  RAPID_FIRE = 'rapid_fire'
 }
