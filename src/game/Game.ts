@@ -1,0 +1,550 @@
+import { Player } from './entities/Player';
+import { Enemy } from './entities/Enemy';
+import { Projectile } from './entities/Projectile';
+import { PowerUp } from './entities/PowerUp';
+import { ParticleSystem } from './effects/ParticleSystem';
+import { InputManager } from './managers/InputManager';
+import { UIManager } from './managers/UIManager';
+import { StorageManager } from './managers/StorageManager';
+import { SoundManager } from './managers/SoundManager';
+import { GameState, GameStats, UpgradeType } from './types/GameTypes';
+
+export class Game {
+  private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D;
+  private gameState: GameState = GameState.MENU;
+  private lastTime = 0;
+
+  // Game entities
+  private player: Player;
+  private enemies: Enemy[] = [];
+  private projectiles: Projectile[] = [];
+  private powerUps: PowerUp[] = [];
+  private particles: ParticleSystem;
+
+  // Managers
+  private inputManager: InputManager;
+  private uiManager: UIManager;
+  private storageManager: StorageManager;
+  private soundManager: SoundManager;
+
+  // Game stats
+  private stats: GameStats = {
+    score: 0,
+    wave: 1,
+    coins: 0,
+    enemiesKilled: 0,
+    gameTime: 0
+  };
+
+  // Wave management
+  private waveTimer = 0;
+  private waveDelay = 3000; // 3 seconds between waves
+  private enemiesInWave = 5;
+  private enemiesSpawned = 0;
+  private waveComplete = false;
+
+  // Power-up spawn
+  private powerUpTimer = 0;
+  private powerUpSpawnRate = 15000; // 15 seconds
+
+  constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d')!;
+    
+    this.resizeCanvas();
+    window.addEventListener('resize', () => this.resizeCanvas());
+
+    // Initialize managers
+    this.inputManager = new InputManager(canvas);
+    this.uiManager = new UIManager();
+    this.storageManager = new StorageManager();
+    this.soundManager = new SoundManager();
+
+    // Initialize game objects
+    this.player = new Player(canvas.width / 2, canvas.height - 100);
+    this.particles = new ParticleSystem();
+
+    // Load saved data
+    this.loadGameData();
+
+    // Setup event listeners
+    this.setupEventListeners();
+  }
+
+  private resizeCanvas(): void {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+    
+    if (this.player) {
+      // Keep player in bounds after resize
+      this.player.position.x = Math.min(this.player.position.x, this.canvas.width - this.player.width);
+      this.player.position.y = Math.min(this.player.position.y, this.canvas.height - this.player.height);
+    }
+  }
+
+  private setupEventListeners(): void {
+    // Menu navigation
+    this.uiManager.onStartGame(() => this.startNewGame());
+    this.uiManager.onShowShop(() => this.showShop());
+    this.uiManager.onShowLeaderboard(() => this.showLeaderboard());
+    this.uiManager.onShowControls(() => this.showControls());
+    this.uiManager.onPauseGame(() => this.pauseGame());
+    this.uiManager.onResumeGame(() => this.resumeGame());
+    this.uiManager.onRestartGame(() => this.startNewGame());
+    this.uiManager.onMainMenu(() => this.showMainMenu());
+    this.uiManager.onSubmitScore((name: string) => this.submitScore(name));
+
+    // Shop
+    this.uiManager.onPurchaseUpgrade((type: UpgradeType) => this.purchaseUpgrade(type));
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape') {
+        if (this.gameState === GameState.PLAYING) {
+          this.pauseGame();
+        } else if (this.gameState === GameState.PAUSED) {
+          this.resumeGame();
+        }
+      } else if (e.code === 'KeyP' && this.gameState === GameState.PLAYING) {
+        this.pauseGame();
+      }
+    });
+  }
+
+  private loadGameData(): void {
+    const savedData = this.storageManager.loadGameData();
+    this.stats.coins = savedData.coins;
+    this.player.applyUpgrades(savedData.upgrades);
+    this.uiManager.updateUpgradeDisplay(savedData.upgrades);
+    this.uiManager.updateCoins(this.stats.coins);
+  }
+
+  private saveGameData(): void {
+    this.storageManager.saveGameData({
+      coins: this.stats.coins,
+      upgrades: this.player.getUpgrades()
+    });
+  }
+
+  public start(): void {
+    this.gameLoop(0);
+  }
+
+  private gameLoop(currentTime: number): void {
+    const deltaTime = currentTime - this.lastTime;
+    this.lastTime = currentTime;
+
+    this.update(deltaTime);
+    this.render();
+
+    requestAnimationFrame((time) => this.gameLoop(time));
+  }
+
+  private update(deltaTime: number): void {
+    if (this.gameState !== GameState.PLAYING) return;
+
+    this.stats.gameTime += deltaTime;
+
+    // Update input
+    this.inputManager.update();
+
+    // Update player
+    this.player.update(deltaTime, this.inputManager, this.canvas);
+
+    // Handle player shooting
+    if (this.inputManager.isShooting() || this.inputManager.isMobile()) {
+      const projectile = this.player.shoot();
+      if (projectile) {
+        this.projectiles.push(projectile);
+        this.soundManager.playShoot();
+      }
+    }
+
+    // Update projectiles
+    this.updateProjectiles(deltaTime);
+
+    // Update enemies
+    this.updateEnemies(deltaTime);
+
+    // Update power-ups
+    this.updatePowerUps(deltaTime);
+
+    // Update particles
+    this.particles.update(deltaTime);
+
+    // Check collisions
+    this.checkCollisions();
+
+    // Wave management
+    this.updateWaveLogic(deltaTime);
+
+    // Spawn power-ups
+    this.updatePowerUpSpawning(deltaTime);
+
+    // Update UI
+    this.updateUI();
+
+    // Check game over
+    if (this.player.hp <= 0) {
+      this.gameOver();
+    }
+  }
+
+  private updateProjectiles(deltaTime: number): void {
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const projectile = this.projectiles[i];
+      projectile.update(deltaTime);
+
+      // Remove projectiles that are off-screen
+      if (projectile.position.y < -50 || 
+          projectile.position.y > this.canvas.height + 50 ||
+          projectile.position.x < -50 || 
+          projectile.position.x > this.canvas.width + 50) {
+        this.projectiles.splice(i, 1);
+      }
+    }
+  }
+
+  private updateEnemies(deltaTime: number): void {
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const enemy = this.enemies[i];
+      enemy.update(deltaTime, this.player.position, this.canvas);
+
+      // Enemy shooting
+      const enemyProjectile = enemy.shoot();
+      if (enemyProjectile) {
+        this.projectiles.push(enemyProjectile);
+      }
+
+      // Remove enemies that are off-screen (only if moving away)
+      if (enemy.position.y > this.canvas.height + 100) {
+        this.enemies.splice(i, 1);
+      }
+    }
+  }
+
+  private updatePowerUps(deltaTime: number): void {
+    for (let i = this.powerUps.length - 1; i >= 0; i--) {
+      const powerUp = this.powerUps[i];
+      powerUp.update(deltaTime);
+
+      // Remove power-ups that are off-screen or expired
+      if (powerUp.position.y > this.canvas.height + 50 || powerUp.isExpired()) {
+        this.powerUps.splice(i, 1);
+      }
+    }
+  }
+
+  private checkCollisions(): void {
+    // Player projectiles vs enemies
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const projectile = this.projectiles[i];
+      if (!projectile.isPlayerProjectile) continue;
+
+      for (let j = this.enemies.length - 1; j >= 0; j--) {
+        const enemy = this.enemies[j];
+        if (this.checkCollision(projectile, enemy)) {
+          // Damage enemy
+          enemy.takeDamage(projectile.damage);
+          this.projectiles.splice(i, 1);
+
+          // Create hit particles
+          this.particles.createExplosion(enemy.position.x, enemy.position.y, '#ff4444', 5);
+
+          // Check if enemy is destroyed
+          if (enemy.hp <= 0) {
+            this.enemies.splice(j, 1);
+            this.stats.enemiesKilled++;
+            this.stats.score += enemy.scoreValue;
+            this.stats.coins += enemy.coinValue;
+
+            // Create destruction particles
+            this.particles.createExplosion(enemy.position.x, enemy.position.y, '#ffaa00', 15);
+            this.soundManager.playExplosion();
+
+            // Chance to spawn power-up
+            if (Math.random() < 0.15) { // 15% chance
+              this.spawnPowerUp(enemy.position.x, enemy.position.y);
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // Enemy projectiles vs player
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const projectile = this.projectiles[i];
+      if (projectile.isPlayerProjectile) continue;
+
+      if (this.checkCollision(projectile, this.player)) {
+        this.player.takeDamage(projectile.damage);
+        this.projectiles.splice(i, 1);
+
+        // Create hit particles
+        this.particles.createExplosion(this.player.position.x, this.player.position.y, '#4444ff', 8);
+      }
+    }
+
+    // Enemies vs player
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const enemy = this.enemies[i];
+      if (this.checkCollision(enemy, this.player)) {
+        this.player.takeDamage(enemy.damage);
+        enemy.takeDamage(this.player.ramDamage);
+
+        // Create collision particles
+        this.particles.createExplosion(
+          (enemy.position.x + this.player.position.x) / 2,
+          (enemy.position.y + this.player.position.y) / 2,
+          '#ffffff', 10
+        );
+
+        if (enemy.hp <= 0) {
+          this.enemies.splice(i, 1);
+          this.stats.enemiesKilled++;
+          this.stats.score += enemy.scoreValue;
+          this.stats.coins += enemy.coinValue;
+          this.soundManager.playExplosion();
+        }
+      }
+    }
+
+    // Player vs power-ups
+    for (let i = this.powerUps.length - 1; i >= 0; i--) {
+      const powerUp = this.powerUps[i];
+      if (this.checkCollision(powerUp, this.player)) {
+        this.player.applyPowerUp(powerUp);
+        this.powerUps.splice(i, 1);
+
+        // Create collection particles
+        this.particles.createExplosion(powerUp.position.x, powerUp.position.y, powerUp.color, 8);
+        this.soundManager.playPowerUp();
+      }
+    }
+  }
+
+  private checkCollision(obj1: any, obj2: any): boolean {
+    return obj1.position.x < obj2.position.x + obj2.width &&
+           obj1.position.x + obj1.width > obj2.position.x &&
+           obj1.position.y < obj2.position.y + obj2.height &&
+           obj1.position.y + obj1.height > obj2.position.y;
+  }
+
+  private updateWaveLogic(deltaTime: number): void {
+    if (this.enemies.length === 0 && this.enemiesSpawned >= this.enemiesInWave) {
+      if (!this.waveComplete) {
+        this.waveComplete = true;
+        this.waveTimer = 0;
+        
+        // Wave completion bonus
+        this.stats.score += this.stats.wave * 100;
+        this.stats.coins += this.stats.wave * 10;
+      }
+
+      this.waveTimer += deltaTime;
+      if (this.waveTimer >= this.waveDelay) {
+        this.startNextWave();
+      }
+    } else if (this.enemiesSpawned < this.enemiesInWave) {
+      // Spawn enemies gradually
+      if (this.enemies.length < 3) { // Max 3 enemies on screen at once
+        this.spawnEnemy();
+        this.enemiesSpawned++;
+      }
+    }
+  }
+
+  private startNextWave(): void {
+    this.stats.wave++;
+    this.enemiesInWave = Math.min(5 + Math.floor(this.stats.wave / 2), 15);
+    this.enemiesSpawned = 0;
+    this.waveComplete = false;
+    this.waveTimer = 0;
+
+    // Increase difficulty every 5 waves
+    if (this.stats.wave % 5 === 0) {
+      Enemy.increaseDifficulty();
+    }
+  }
+
+  private spawnEnemy(): void {
+    const x = Math.random() * (this.canvas.width - 60);
+    const y = -60;
+    const enemy = new Enemy(x, y, this.stats.wave);
+    this.enemies.push(enemy);
+  }
+
+  private updatePowerUpSpawning(deltaTime: number): void {
+    this.powerUpTimer += deltaTime;
+    if (this.powerUpTimer >= this.powerUpSpawnRate) {
+      this.powerUpTimer = 0;
+      const x = Math.random() * (this.canvas.width - 40);
+      const y = -40;
+      this.spawnPowerUp(x, y);
+    }
+  }
+
+  private spawnPowerUp(x: number, y: number): void {
+    const powerUp = new PowerUp(x, y);
+    this.powerUps.push(powerUp);
+  }
+
+  private updateUI(): void {
+    this.uiManager.updateHP(this.player.hp, this.player.maxHp);
+    this.uiManager.updateShield(this.player.shield, this.player.maxShield);
+    this.uiManager.updateScore(this.stats.score);
+    this.uiManager.updateWave(this.stats.wave);
+    this.uiManager.updateCoins(this.stats.coins);
+  }
+
+  private render(): void {
+    // Clear canvas with gradient background
+    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+    gradient.addColorStop(0, '#000428');
+    gradient.addColorStop(1, '#004e92');
+    this.ctx.fillStyle = gradient;
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Draw stars
+    this.drawStars();
+
+    if (this.gameState === GameState.PLAYING || this.gameState === GameState.PAUSED) {
+      // Draw game entities
+      this.player.render(this.ctx);
+      
+      this.enemies.forEach(enemy => enemy.render(this.ctx));
+      this.projectiles.forEach(projectile => projectile.render(this.ctx));
+      this.powerUps.forEach(powerUp => powerUp.render(this.ctx));
+      
+      // Draw particles
+      this.particles.render(this.ctx);
+
+      // Draw wave transition text
+      if (this.waveComplete && this.waveTimer < 2000) {
+        this.drawWaveTransition();
+      }
+    }
+  }
+
+  private drawStars(): void {
+    this.ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 100; i++) {
+      const x = (i * 137.5) % this.canvas.width;
+      const y = (i * 73.3) % this.canvas.height;
+      const size = Math.sin(i + this.stats.gameTime * 0.001) * 0.5 + 1;
+      this.ctx.globalAlpha = Math.sin(i + this.stats.gameTime * 0.002) * 0.3 + 0.7;
+      this.ctx.fillRect(x, y, size, size);
+    }
+    this.ctx.globalAlpha = 1;
+  }
+
+  private drawWaveTransition(): void {
+    this.ctx.save();
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    this.ctx.fillStyle = '#ffff00';
+    this.ctx.font = 'bold 48px Orbitron';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    const text = `WAVE ${this.stats.wave} COMPLETE!`;
+    this.ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2 - 30);
+    
+    this.ctx.font = 'bold 24px Orbitron';
+    this.ctx.fillStyle = '#00ffff';
+    const nextText = `Next wave in ${Math.ceil((this.waveDelay - this.waveTimer) / 1000)}...`;
+    this.ctx.fillText(nextText, this.canvas.width / 2, this.canvas.height / 2 + 30);
+    
+    this.ctx.restore();
+  }
+
+  // Game state methods
+  private startNewGame(): void {
+    this.gameState = GameState.PLAYING;
+    this.stats = {
+      score: 0,
+      wave: 1,
+      coins: this.stats.coins, // Keep coins
+      enemiesKilled: 0,
+      gameTime: 0
+    };
+
+    // Reset game objects
+    this.player.reset(this.canvas.width / 2, this.canvas.height - 100);
+    this.enemies = [];
+    this.projectiles = [];
+    this.powerUps = [];
+    this.particles = new ParticleSystem();
+
+    // Reset wave logic
+    this.enemiesInWave = 5;
+    this.enemiesSpawned = 0;
+    this.waveComplete = false;
+    this.waveTimer = 0;
+    this.powerUpTimer = 0;
+
+    // Reset difficulty
+    Enemy.resetDifficulty();
+
+    this.uiManager.showGame();
+  }
+
+  private pauseGame(): void {
+    if (this.gameState === GameState.PLAYING) {
+      this.gameState = GameState.PAUSED;
+      this.uiManager.showPause();
+    }
+  }
+
+  private resumeGame(): void {
+    if (this.gameState === GameState.PAUSED) {
+      this.gameState = GameState.PLAYING;
+      this.uiManager.showGame();
+    }
+  }
+
+  private gameOver(): void {
+    this.gameState = GameState.GAME_OVER;
+    this.saveGameData();
+    this.uiManager.showGameOver(this.stats.score, this.stats.wave - 1, this.stats.coins);
+  }
+
+  private showMainMenu(): void {
+    this.gameState = GameState.MENU;
+    this.uiManager.showMainMenu();
+  }
+
+  private showShop(): void {
+    this.uiManager.showShop();
+  }
+
+  private showLeaderboard(): void {
+    const scores = this.storageManager.getLeaderboard();
+    this.uiManager.showLeaderboard(scores);
+  }
+
+  private showControls(): void {
+    this.uiManager.showControls();
+  }
+
+  private submitScore(playerName: string): void {
+    this.storageManager.addScore(playerName, this.stats.score, this.stats.wave - 1);
+    this.showLeaderboard();
+  }
+
+  private purchaseUpgrade(type: UpgradeType): boolean {
+    const cost = this.player.getUpgradeCost(type);
+    if (this.stats.coins >= cost) {
+      this.stats.coins -= cost;
+      this.player.upgrade(type);
+      this.saveGameData();
+      this.uiManager.updateCoins(this.stats.coins);
+      this.uiManager.updateUpgradeDisplay(this.player.getUpgrades());
+      return true;
+    }
+    return false;
+  }
+}
