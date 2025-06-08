@@ -15,16 +15,58 @@
   <body>
     <canvas id="gameCanvas"></canvas>
     
+    <!-- HUD -->
+    <div id="hud" class="hud">
+      <div class="hud-top">
+        <div class="hud-left">
+          <div class="stat-group">
+            <span class="stat-label">HP</span>
+            <div class="health-bar">
+              <div id="hp-fill" class="health-fill"></div>
+            </div>
+            <span id="hp-text" class="stat-value">100/100</span>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">SHIELD</span>
+            <div class="shield-bar">
+              <div id="shield-fill" class="shield-fill"></div>
+            </div>
+            <span id="shield-text" class="stat-value">0/0</span>
+          </div>
+        </div>
+        <div class="hud-center">
+          <div class="stat-group">
+            <span class="stat-label">WAVE</span>
+            <span id="wave-text" class="stat-value large">1</span>
+          </div>
+        </div>
+        <div class="hud-right">
+          <div class="stat-group">
+            <span class="stat-label">SCORE</span>
+            <span id="score-text" class="stat-value">0</span>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">COINS</span>
+            <span id="coins-text" class="stat-value">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="hud-controls">
+        <button id="mobile-pause-btn" class="control-btn">⏸️</button>
+        <button id="mobile-menu-btn" class="control-btn">🛒</button>
+      </div>
+    </div>
+
     <!-- Main Menu -->
-    <div id="mainMenu" class="menu-screen active">
+    <div id="menu-overlay" class="menu-overlay">
       <div class="menu-content">
         <h1 class="game-title">SPACE BATTLE</h1>
         <p class="game-subtitle">Enhanced Edition v2.0</p>
         <div class="menu-buttons">
-          <button id="startButton" class="menu-btn primary">START GAME</button>
-          <button id="shopButton" class="menu-btn">UPGRADES</button>
-          <button id="leaderboardButton" class="menu-btn">LEADERBOARD</button>
-          <button id="controlsButton" class="menu-btn">CONTROLS</button>
+          <button id="start-btn" class="menu-btn primary">START GAME</button>
+          <button id="shop-btn" class="menu-btn">UPGRADES</button>
+          <button id="leaderboard-btn" class="menu-btn">LEADERBOARD</button>
+          <button id="controls-btn" class="menu-btn">CONTROLS</button>
         </div>
         <div class="feature-highlights">
           <p>✨ 6 Unique Enemy Types</p>
@@ -34,166 +76,107 @@
       </div>
     </div>
 
-    <!-- Game HUD -->
-    <div id="gameHUD" class="game-hud">
-      <div class="hud-top">
-        <div class="hud-left">
-          <div class="stat-group">
-            <span class="stat-label">HP</span>
-            <div class="health-bar">
-              <div id="healthFill" class="health-fill"></div>
-            </div>
-            <span id="healthText" class="stat-value">100/100</span>
-          </div>
-          <div class="stat-group">
-            <span class="stat-label">SHIELD</span>
-            <div class="shield-bar">
-              <div id="shieldFill" class="shield-fill"></div>
-            </div>
-            <span id="shieldText" class="stat-value">0/0</span>
-          </div>
-        </div>
-        <div class="hud-center">
-          <div class="stat-group">
-            <span class="stat-label">WAVE</span>
-            <span id="waveText" class="stat-value large">1</span>
-          </div>
-        </div>
-        <div class="hud-right">
-          <div class="stat-group">
-            <span class="stat-label">SCORE</span>
-            <span id="scoreText" class="stat-value">0</span>
-          </div>
-          <div class="stat-group">
-            <span class="stat-label">COINS</span>
-            <span id="coinsText" class="stat-value">0</span>
-          </div>
-        </div>
-      </div>
-      <div class="hud-controls">
-        <button id="pauseButton" class="control-btn">⏸️ PAUSE</button>
-        <button id="shopButtonGame" class="control-btn">🛒 SHOP</button>
-      </div>
-    </div>
-
     <!-- Pause Menu -->
-    <div id="pauseMenu" class="menu-screen">
+    <div id="pause-overlay" class="menu-overlay hidden">
       <div class="menu-content">
         <h2>GAME PAUSED</h2>
         <div class="menu-buttons">
-          <button id="resumeButton" class="menu-btn primary">RESUME</button>
-          <button id="shopButtonPause" class="menu-btn">UPGRADES</button>
-          <button id="restartButton" class="menu-btn">RESTART</button>
-          <button id="mainMenuButton" class="menu-btn">MAIN MENU</button>
+          <button id="resume-btn" class="menu-btn primary">RESUME</button>
+          <button id="pause-shop-btn" class="menu-btn">UPGRADES</button>
+          <button id="pause-menu-btn" class="menu-btn">MAIN MENU</button>
         </div>
       </div>
     </div>
 
     <!-- Shop Menu -->
-    <div id="shopMenu" class="menu-screen">
+    <div id="shop-overlay" class="menu-overlay hidden">
       <div class="menu-content">
         <h2>UPGRADES</h2>
-        <div id="coinsDisplay" class="coins-display">Coins: 0</div>
+        <div class="coins-display">Coins: <span id="coins-text-shop">0</span></div>
         <div class="upgrades-grid">
-          <div class="upgrade-card" data-upgrade="damage">
-            <h3>🔥 DAMAGE</h3>
+          <div class="upgrade-card">
+            <h3>🔥 WEAPON</h3>
             <p>Increase weapon damage</p>
-            <div class="upgrade-level">Level: <span id="damageLevel">1</span></div>
-            <button class="upgrade-btn" data-upgrade="damage">
-              Upgrade (<span id="damageCost">100</span> coins)
+            <div class="upgrade-level">Level: <span id="weapon-level">1</span></div>
+            <button class="shop-buy-btn" data-upgrade="weapon">
+              Upgrade (<span id="weapon-cost">100</span> coins)
             </button>
           </div>
-          <div class="upgrade-card" data-upgrade="fireRate">
-            <h3>⚡ FIRE RATE</h3>
-            <p>Shoot faster</p>
-            <div class="upgrade-level">Level: <span id="fireRateLevel">1</span></div>
-            <button class="upgrade-btn" data-upgrade="fireRate">
-              Upgrade (<span id="fireRateCost">150</span> coins)
-            </button>
-          </div>
-          <div class="upgrade-card" data-upgrade="health">
-            <h3>❤️ HEALTH</h3>
-            <p>Increase maximum health</p>
-            <div class="upgrade-level">Level: <span id="healthLevel">1</span></div>
-            <button class="upgrade-btn" data-upgrade="health">
-              Upgrade (<span id="healthCost">200</span> coins)
-            </button>
-          </div>
-          <div class="upgrade-card" data-upgrade="speed">
-            <h3>🚀 SPEED</h3>
-            <p>Move faster</p>
-            <div class="upgrade-level">Level: <span id="speedLevel">1</span></div>
-            <button class="upgrade-btn" data-upgrade="speed">
-              Upgrade (<span id="speedCost">120</span> coins)
-            </button>
-          </div>
-          <div class="upgrade-card" data-upgrade="shield">
+          <div class="upgrade-card">
             <h3>🛡️ SHIELD</h3>
             <p>Add energy shield</p>
-            <div class="upgrade-level">Level: <span id="shieldLevel">0</span></div>
-            <button class="upgrade-btn" data-upgrade="shield">
-              Upgrade (<span id="shieldCost">300</span> coins)
+            <div class="upgrade-level">Level: <span id="shield-level">0</span></div>
+            <button class="shop-buy-btn" data-upgrade="shield">
+              Upgrade (<span id="shield-cost">150</span> coins)
             </button>
           </div>
-          <div class="upgrade-card" data-upgrade="multiShot">
-            <h3>🎯 MULTI-SHOT</h3>
-            <p>Fire multiple projectiles</p>
-            <div class="upgrade-level">Level: <span id="multiShotLevel">0</span></div>
-            <button class="upgrade-btn" data-upgrade="multiShot">
-              Upgrade (<span id="multiShotCost">400</span> coins)
+          <div class="upgrade-card">
+            <h3>❤️ HEALTH</h3>
+            <p>Increase maximum health</p>
+            <div class="upgrade-level">Level: <span id="hp-level">1</span></div>
+            <button class="shop-buy-btn" data-upgrade="hp">
+              Upgrade (<span id="hp-cost">200</span> coins)
+            </button>
+          </div>
+          <div class="upgrade-card">
+            <h3>🚀 SPEED</h3>
+            <p>Move faster</p>
+            <div class="upgrade-level">Level: <span id="speed-level">1</span></div>
+            <button class="shop-buy-btn" data-upgrade="speed">
+              Upgrade (<span id="speed-cost">120</span> coins)
             </button>
           </div>
         </div>
         <div class="menu-buttons">
-          <button id="backFromShop" class="menu-btn primary">BACK</button>
+          <button id="shop-close-btn" class="menu-btn primary">BACK</button>
         </div>
       </div>
     </div>
 
     <!-- Game Over Menu -->
-    <div id="gameOverMenu" class="menu-screen">
+    <div id="game-over-overlay" class="menu-overlay hidden">
       <div class="menu-content">
         <h2>GAME OVER</h2>
         <div class="game-stats">
           <div class="stat-item">
             <span class="stat-label">Final Score:</span>
-            <span id="finalScore" class="stat-value">0</span>
+            <span id="final-score" class="stat-value">0</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Waves Survived:</span>
-            <span id="finalWave" class="stat-value">0</span>
+            <span id="final-wave" class="stat-value">0</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Coins Earned:</span>
-            <span id="coinsEarned" class="stat-value">0</span>
+            <span id="final-coins" class="stat-value">0</span>
           </div>
         </div>
         <div class="score-input">
-          <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
-          <button id="submitScore" class="menu-btn primary">SUBMIT SCORE</button>
+          <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
+          <button id="submit-score-btn" class="menu-btn primary">SUBMIT SCORE</button>
         </div>
         <div class="menu-buttons">
-          <button id="playAgain" class="menu-btn">PLAY AGAIN</button>
-          <button id="mainMenuFromGameOver" class="menu-btn">MAIN MENU</button>
+          <button id="restart-btn" class="menu-btn">PLAY AGAIN</button>
+          <button id="main-menu-btn" class="menu-btn">MAIN MENU</button>
         </div>
       </div>
     </div>
 
     <!-- Leaderboard Menu -->
-    <div id="leaderboardMenu" class="menu-screen">
+    <div id="leaderboard-overlay" class="menu-overlay hidden">
       <div class="menu-content">
         <h2>LEADERBOARD</h2>
-        <div id="leaderboardList" class="leaderboard-list">
+        <div id="leaderboard-list" class="leaderboard-list">
           <!-- Leaderboard entries will be populated here -->
         </div>
         <div class="menu-buttons">
-          <button id="backFromLeaderboard" class="menu-btn primary">BACK</button>
+          <button id="leaderboard-close-btn" class="menu-btn primary">BACK</button>
         </div>
       </div>
     </div>
 
     <!-- Controls Menu -->
-    <div id="controlsMenu" class="menu-screen">
+    <div id="controls-overlay" class="menu-overlay hidden">
       <div class="menu-content">
         <h2>CONTROLS</h2>
         <div class="controls-list">
@@ -249,7 +232,7 @@
           <p class="boss-info">🎯 <strong>Boss Battles every 5 waves!</strong></p>
         </div>
         <div class="menu-buttons">
-          <button id="backFromControls" class="menu-btn primary">BACK</button>
+          <button id="controls-close-btn" class="menu-btn primary">BACK</button>
         </div>
       </div>
     </div>

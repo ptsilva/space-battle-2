@@ -3,173 +3,241 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Space Battle - Epic Space Combat Game</title>
-    <meta name="description" content="Epic space battle game with upgrades, waves, and intense combat">
+    <title>Space Battle - Enhanced Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/assets/index-D9J89vhH.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-C3TqnrTr.css">
+    <meta name="description" content="Epic space shooter with 6 enemy types and boss battles">
+    <meta name="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta name="pragma" content="no-cache">
+    <meta name="expires" content="0">
+    <script type="module" crossorigin src="./assets/index-DQ2kh1zh.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BYjQc4q2.css">
   </head>
   <body>
-    <div id="app">
-      <canvas id="gameCanvas"></canvas>
-      <div id="ui-overlay">
-        <div id="hud" class="hud">
-          <div class="hud-left">
-            <div class="stat-bar">
-              <span class="label">HP</span>
-              <div class="bar hp-bar">
-                <div class="bar-fill" id="hp-fill"></div>
-              </div>
-              <span id="hp-text">100/100</span>
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- HUD -->
+    <div id="hud" class="hud">
+      <div class="hud-top">
+        <div class="hud-left">
+          <div class="stat-group">
+            <span class="stat-label">HP</span>
+            <div class="health-bar">
+              <div id="hp-fill" class="health-fill"></div>
             </div>
-            <div class="stat-bar">
-              <span class="label">Shield</span>
-              <div class="bar shield-bar">
-                <div class="bar-fill" id="shield-fill"></div>
-              </div>
-              <span id="shield-text">100/100</span>
-            </div>
+            <span id="hp-text" class="stat-value">100/100</span>
           </div>
-          <div class="hud-center">
-            <div class="wave-info">
-              <span id="wave-text">Wave 1</span>
+          <div class="stat-group">
+            <span class="stat-label">SHIELD</span>
+            <div class="shield-bar">
+              <div id="shield-fill" class="shield-fill"></div>
             </div>
-          </div>
-          <div class="hud-right">
-            <div class="score-info">
-              <span class="label">Score</span>
-              <span id="score-text">0</span>
-            </div>
-            <div class="currency-info">
-              <span class="label">Coins</span>
-              <span id="coins-text">0</span>
-            </div>
+            <span id="shield-text" class="stat-value">0/0</span>
           </div>
         </div>
-        
-        <div id="menu-overlay" class="menu-overlay">
-          <div class="menu-container">
-            <h1 class="game-title">SPACE BATTLE</h1>
-            <div class="menu-buttons">
-              <button id="start-btn" class="menu-btn primary">START GAME</button>
-              <button id="shop-btn" class="menu-btn">SHOP</button>
-              <button id="leaderboard-btn" class="menu-btn">LEADERBOARD</button>
-              <button id="controls-btn" class="menu-btn">CONTROLS</button>
-            </div>
+        <div class="hud-center">
+          <div class="stat-group">
+            <span class="stat-label">WAVE</span>
+            <span id="wave-text" class="stat-value large">1</span>
           </div>
         </div>
+        <div class="hud-right">
+          <div class="stat-group">
+            <span class="stat-label">SCORE</span>
+            <span id="score-text" class="stat-value">0</span>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">COINS</span>
+            <span id="coins-text" class="stat-value">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="hud-controls">
+        <button id="mobile-pause-btn" class="control-btn">⏸️</button>
+        <button id="mobile-menu-btn" class="control-btn">🛒</button>
+      </div>
+    </div>
 
-        <div id="shop-overlay" class="menu-overlay hidden">
-          <div class="menu-container">
-            <h2 class="menu-title">UPGRADE SHOP</h2>
-            <div class="shop-grid">
-              <div class="shop-item" data-upgrade="weapon">
-                <h3>Weapon Upgrade</h3>
-                <p>Increase damage and fire rate</p>
-                <div class="price">Cost: <span id="weapon-cost">100</span> coins</div>
-                <div class="level">Level: <span id="weapon-level">1</span></div>
-                <button class="shop-buy-btn" data-upgrade="weapon">BUY</button>
-              </div>
-              <div class="shop-item" data-upgrade="shield">
-                <h3>Shield Enhancement</h3>
-                <p>Increase shield capacity and regen</p>
-                <div class="price">Cost: <span id="shield-cost">150</span> coins</div>
-                <div class="level">Level: <span id="shield-level">1</span></div>
-                <button class="shop-buy-btn" data-upgrade="shield">BUY</button>
-              </div>
-              <div class="shop-item" data-upgrade="hp">
-                <h3>Hull Reinforcement</h3>
-                <p>Increase maximum HP</p>
-                <div class="price">Cost: <span id="hp-cost">200</span> coins</div>
-                <div class="level">Level: <span id="hp-level">1</span></div>
-                <button class="shop-buy-btn" data-upgrade="hp">BUY</button>
-              </div>
-              <div class="shop-item" data-upgrade="speed">
-                <h3>Engine Boost</h3>
-                <p>Increase movement speed</p>
-                <div class="price">Cost: <span id="speed-cost">120</span> coins</div>
-                <div class="level">Level: <span id="speed-level">1</span></div>
-                <button class="shop-buy-btn" data-upgrade="speed">BUY</button>
-              </div>
-            </div>
-            <button id="shop-close-btn" class="menu-btn">BACK</button>
-          </div>
+    <!-- Main Menu -->
+    <div id="menu-overlay" class="menu-overlay">
+      <div class="menu-content">
+        <h1 class="game-title">SPACE BATTLE</h1>
+        <p class="game-subtitle">Enhanced Edition v2.0</p>
+        <div class="menu-buttons">
+          <button id="start-btn" class="menu-btn primary">START GAME</button>
+          <button id="shop-btn" class="menu-btn">UPGRADES</button>
+          <button id="leaderboard-btn" class="menu-btn">LEADERBOARD</button>
+          <button id="controls-btn" class="menu-btn">CONTROLS</button>
         </div>
-
-        <div id="leaderboard-overlay" class="menu-overlay hidden">
-          <div class="menu-container">
-            <h2 class="menu-title">LEADERBOARD</h2>
-            <div class="leaderboard-list" id="leaderboard-list">
-              <!-- Leaderboard entries will be populated here -->
-            </div>
-            <button id="leaderboard-close-btn" class="menu-btn">BACK</button>
-          </div>
-        </div>
-
-        <div id="controls-overlay" class="menu-overlay hidden">
-          <div class="menu-container">
-            <h2 class="menu-title">CONTROLS</h2>
-            <div class="controls-info">
-              <div class="control-section">
-                <h3>Desktop Controls</h3>
-                <p><strong>WASD / Arrow Keys:</strong> Move spaceship</p>
-                <p><strong>Spacebar:</strong> Shoot</p>
-                <p><strong>P:</strong> Pause game</p>
-                <p><strong>ESC:</strong> Open menu</p>
-              </div>
-              <div class="control-section">
-                <h3>Mobile Controls</h3>
-                <p><strong>Touch & Drag:</strong> Move spaceship</p>
-                <p><strong>Auto-fire:</strong> Weapons fire automatically</p>
-                <p><strong>Tap Menu:</strong> Access pause and upgrades</p>
-              </div>
-              <div class="control-section">
-                <h3>Gameplay Tips</h3>
-                <p>• Collect power-ups for temporary boosts</p>
-                <p>• Upgrade your ship between waves</p>
-                <p>• Shield regenerates when not taking damage</p>
-                <p>• Higher waves give more coins and score</p>
-              </div>
-            </div>
-            <button id="controls-close-btn" class="menu-btn">BACK</button>
-          </div>
-        </div>
-
-        <div id="game-over-overlay" class="menu-overlay hidden">
-          <div class="menu-container">
-            <h2 class="menu-title">GAME OVER</h2>
-            <div class="game-over-stats">
-              <p>Final Score: <span id="final-score">0</span></p>
-              <p>Waves Completed: <span id="final-wave">0</span></p>
-              <p>Coins Earned: <span id="final-coins">0</span></p>
-            </div>
-            <div class="name-input-section">
-              <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
-              <button id="submit-score-btn" class="menu-btn primary">SUBMIT SCORE</button>
-            </div>
-            <button id="restart-btn" class="menu-btn">PLAY AGAIN</button>
-            <button id="main-menu-btn" class="menu-btn">MAIN MENU</button>
-          </div>
-        </div>
-
-        <div id="pause-overlay" class="menu-overlay hidden">
-          <div class="menu-container">
-            <h2 class="menu-title">PAUSED</h2>
-            <div class="menu-buttons">
-              <button id="resume-btn" class="menu-btn primary">RESUME</button>
-              <button id="pause-shop-btn" class="menu-btn">SHOP</button>
-              <button id="pause-menu-btn" class="menu-btn">MAIN MENU</button>
-            </div>
-          </div>
-        </div>
-
-        <div id="mobile-controls" class="mobile-controls">
-          <button id="mobile-menu-btn" class="mobile-btn">⚙️</button>
-          <button id="mobile-pause-btn" class="mobile-btn">⏸️</button>
+        <div class="feature-highlights">
+          <p>✨ 6 Unique Enemy Types</p>
+          <p>🎯 Epic Boss Battles</p>
+          <p>⚡ Multi-Phase Combat</p>
         </div>
       </div>
     </div>
+
+    <!-- Pause Menu -->
+    <div id="pause-overlay" class="menu-overlay hidden">
+      <div class="menu-content">
+        <h2>GAME PAUSED</h2>
+        <div class="menu-buttons">
+          <button id="resume-btn" class="menu-btn primary">RESUME</button>
+          <button id="pause-shop-btn" class="menu-btn">UPGRADES</button>
+          <button id="pause-menu-btn" class="menu-btn">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shop Menu -->
+    <div id="shop-overlay" class="menu-overlay hidden">
+      <div class="menu-content">
+        <h2>UPGRADES</h2>
+        <div class="coins-display">Coins: <span id="coins-text-shop">0</span></div>
+        <div class="upgrades-grid">
+          <div class="upgrade-card">
+            <h3>🔥 WEAPON</h3>
+            <p>Increase weapon damage</p>
+            <div class="upgrade-level">Level: <span id="weapon-level">1</span></div>
+            <button class="shop-buy-btn" data-upgrade="weapon">
+              Upgrade (<span id="weapon-cost">100</span> coins)
+            </button>
+          </div>
+          <div class="upgrade-card">
+            <h3>🛡️ SHIELD</h3>
+            <p>Add energy shield</p>
+            <div class="upgrade-level">Level: <span id="shield-level">0</span></div>
+            <button class="shop-buy-btn" data-upgrade="shield">
+              Upgrade (<span id="shield-cost">150</span> coins)
+            </button>
+          </div>
+          <div class="upgrade-card">
+            <h3>❤️ HEALTH</h3>
+            <p>Increase maximum health</p>
+            <div class="upgrade-level">Level: <span id="hp-level">1</span></div>
+            <button class="shop-buy-btn" data-upgrade="hp">
+              Upgrade (<span id="hp-cost">200</span> coins)
+            </button>
+          </div>
+          <div class="upgrade-card">
+            <h3>🚀 SPEED</h3>
+            <p>Move faster</p>
+            <div class="upgrade-level">Level: <span id="speed-level">1</span></div>
+            <button class="shop-buy-btn" data-upgrade="speed">
+              Upgrade (<span id="speed-cost">120</span> coins)
+            </button>
+          </div>
+        </div>
+        <div class="menu-buttons">
+          <button id="shop-close-btn" class="menu-btn primary">BACK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Menu -->
+    <div id="game-over-overlay" class="menu-overlay hidden">
+      <div class="menu-content">
+        <h2>GAME OVER</h2>
+        <div class="game-stats">
+          <div class="stat-item">
+            <span class="stat-label">Final Score:</span>
+            <span id="final-score" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Waves Survived:</span>
+            <span id="final-wave" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Coins Earned:</span>
+            <span id="final-coins" class="stat-value">0</span>
+          </div>
+        </div>
+        <div class="score-input">
+          <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
+          <button id="submit-score-btn" class="menu-btn primary">SUBMIT SCORE</button>
+        </div>
+        <div class="menu-buttons">
+          <button id="restart-btn" class="menu-btn">PLAY AGAIN</button>
+          <button id="main-menu-btn" class="menu-btn">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard Menu -->
+    <div id="leaderboard-overlay" class="menu-overlay hidden">
+      <div class="menu-content">
+        <h2>LEADERBOARD</h2>
+        <div id="leaderboard-list" class="leaderboard-list">
+          <!-- Leaderboard entries will be populated here -->
+        </div>
+        <div class="menu-buttons">
+          <button id="leaderboard-close-btn" class="menu-btn primary">BACK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Menu -->
+    <div id="controls-overlay" class="menu-overlay hidden">
+      <div class="menu-content">
+        <h2>CONTROLS</h2>
+        <div class="controls-list">
+          <div class="control-item">
+            <span class="control-key">WASD / Arrow Keys</span>
+            <span class="control-desc">Move ship</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">Space / Mouse Click</span>
+            <span class="control-desc">Shoot</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">P</span>
+            <span class="control-desc">Pause game</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">Escape</span>
+            <span class="control-desc">Pause / Back</span>
+          </div>
+          <div class="control-item">
+            <span class="control-key">Touch Controls</span>
+            <span class="control-desc">Tap to move and shoot (mobile)</span>
+          </div>
+        </div>
+        <div class="enemy-guide">
+          <h3>Enemy Types</h3>
+          <div class="enemy-types">
+            <div class="enemy-type">
+              <span class="enemy-color scout">●</span>
+              <span>Scout - Fast & Agile</span>
+            </div>
+            <div class="enemy-type">
+              <span class="enemy-color fighter">●</span>
+              <span>Fighter - Dual Shots</span>
+            </div>
+            <div class="enemy-type">
+              <span class="enemy-color heavy">●</span>
+              <span>Heavy - Triple Spread</span>
+            </div>
+            <div class="enemy-type">
+              <span class="enemy-color bomber">●</span>
+              <span>Bomber - Explosive</span>
+            </div>
+            <div class="enemy-type">
+              <span class="enemy-color interceptor">●</span>
+              <span>Interceptor - Burst Fire</span>
+            </div>
+            <div class="enemy-type">
+              <span class="enemy-color destroyer">●</span>
+              <span>Destroyer - Spread Shot</span>
+            </div>
+          </div>
+          <p class="boss-info">🎯 <strong>Boss Battles every 5 waves!</strong></p>
+        </div>
+        <div class="menu-buttons">
+          <button id="controls-close-btn" class="menu-btn primary">BACK</button>
+        </div>
+      </div>
+    </div>
+
   </body>
 </html>

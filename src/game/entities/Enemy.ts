@@ -153,7 +153,7 @@ export class Enemy {
     this.lastShot += deltaTime;
 
     // Movement patterns based on enemy type
-    this.updateMovement(deltaTime, playerPosition, canvas);
+    this.updateMovement(playerPosition);
 
     // Apply movement
     this.position.x += this.velocity.x * deltaTime / 1000;
@@ -163,7 +163,7 @@ export class Enemy {
     this.position.x = Math.max(0, Math.min(canvas.width - this.width, this.position.x));
   }
 
-  private updateMovement(deltaTime: number, playerPosition: Vector2, canvas: HTMLCanvasElement): void {
+  private updateMovement(playerPosition: Vector2): void {
     switch (this.type) {
       case EnemyType.SCOUT:
         this.updateScoutMovement();
@@ -319,18 +319,6 @@ export class Enemy {
     }
 
     return projectiles;
-  }
-
-  private getProjectileColor(): string {
-    switch (this.type) {
-      case EnemyType.SCOUT: return '#ff4444';
-      case EnemyType.FIGHTER: return '#ff8800';
-      case EnemyType.HEAVY: return '#ff0088';
-      case EnemyType.BOMBER: return '#ffaa00';
-      case EnemyType.INTERCEPTOR: return '#00ff88';
-      case EnemyType.DESTROYER: return '#8800ff';
-      default: return '#ff4444';
-    }
   }
 
   public takeDamage(amount: number): void {

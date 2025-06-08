@@ -10,24 +10,22 @@ export enum BossType {
 export class Boss {
   public position: Vector2;
   public velocity: Vector2;
-  public width: number;
-  public height: number;
-  public hp: number;
-  public maxHp: number;
-  public damage: number;
-  public scoreValue: number;
-  public coinValue: number;
+  public width!: number;
+  public height!: number;
+  public hp!: number;
+  public maxHp!: number;
+  public damage!: number;
+  public scoreValue!: number;
+  public coinValue!: number;
   public type: BossType;
   public isDefeated: boolean = false;
 
-  private speed: number;
+  private speed!: number;
   private lastShot = 0;
-  private shootCooldown: number;
-  private movementPattern: number = 0;
+  private shootCooldown!: number;
   private patternTimer = 0;
   private specialTimer = 0;
   private phase: number = 1;
-  private maxPhases: number = 3;
   private specialAttackTimer = 0;
   private specialAttackCooldown = 8000; // 8 seconds
 
@@ -109,7 +107,7 @@ export class Boss {
     }
 
     // Movement patterns
-    this.updateMovement(deltaTime, playerPosition, canvas);
+    this.updateMovement(playerPosition);
 
     // Apply movement
     this.position.x += this.velocity.x * deltaTime / 1000;
@@ -120,9 +118,7 @@ export class Boss {
     this.position.y = Math.max(-this.height * 0.3, Math.min(canvas.height * 0.4, this.position.y));
   }
 
-  private updateMovement(deltaTime: number, playerPosition: Vector2, canvas: HTMLCanvasElement): void {
-    const centerX = canvas.width / 2 - this.width / 2;
-    
+  private updateMovement(playerPosition: Vector2): void {
     switch (this.type) {
       case BossType.DREADNOUGHT:
         // Side-to-side movement
@@ -132,7 +128,6 @@ export class Boss {
         
       case BossType.MOTHERSHIP:
         // Circular movement
-        const radius = 100;
         const angle = this.patternTimer * 0.0008;
         this.velocity.x = Math.cos(angle) * this.speed * 0.8;
         this.velocity.y = Math.sin(angle) * this.speed * 0.4;
@@ -243,7 +238,6 @@ export class Boss {
         // Orbital bombardment
         for (let i = 0; i < 12; i++) {
           const angle = (i / 12) * Math.PI * 2;
-          const radius = 150;
           const vx = Math.sin(angle) * 300;
           const vy = Math.cos(angle) * 200 + 250;
           projectiles.push(new Projectile(
